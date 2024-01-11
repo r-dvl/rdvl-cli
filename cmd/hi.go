@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Raúl Del Valle Lima <rauldel.valle.lima@gmail.com>
 */
 package cmd
 
