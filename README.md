@@ -1,1 +1,2 @@
-# r-dvl CLI
+# R-dVL CLI
+Personal CLI with helpers.
