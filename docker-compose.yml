@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  builder:
+    container_name: rdvl-builder
+    build:
+      context: .
+      args:
+        OS: windows
+    volumes:
+      - ./bin:/home/app/bin
+    environment:
+      - TAG=local
