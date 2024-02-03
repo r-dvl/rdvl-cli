@@ -6,7 +6,8 @@ services:
     build:
       context: .
       args:
-        OS: windows
+        OS: linux
+        ARCH: arm64
     volumes:
       - ./bin:/home/app/bin
     environment:
