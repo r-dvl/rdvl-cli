@@ -1,12 +1,11 @@
 ARG OS
 ARG ARCH
+ARG VERSION
 
 FROM ghcr.io/r-dvl/golang-builder:${OS}-${ARCH}
 
 ENV PROJECT_NAME=rdvl-cli
-
-ENV VERSION=sample
-
+ENV VERSION=VERSION
 ENV FOLDER_NAME=${PROJECT_NAME}-${VERSION}.${GOOS}-${GOARCH}
 
 WORKDIR /home/app
