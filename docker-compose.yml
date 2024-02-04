@@ -6,9 +6,9 @@ services:
     build:
       context: .
       args:
-        OS: linux
-        ARCH: arm64
+        OS: windows
+        ARCH: amd64
     volumes:
       - ./bin:/home/app/bin
     environment:
-      - TAG=local
+      - TAG=sample

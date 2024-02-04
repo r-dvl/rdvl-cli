@@ -11,5 +11,7 @@ COPY . .
 
 RUN go mod download && go mod verify
 
+RUN mkdir ./bin/rdvl-cli.${GOOS}-${GOARCH}
+
 # Compile binaries
-CMD ["sh", "-c", "go build -o ./bin/rdvl-cli-${TAG}.${GOOS}-${GOARCH}${EXT}"]
+CMD ["sh", "-c", "go build -o ./bin/rdvl-cli.${GOOS}-${GOARCH}/rdvl-cli${EXT}"]
