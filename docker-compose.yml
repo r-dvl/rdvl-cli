@@ -11,4 +11,4 @@ services:
     volumes:
       - ./bin:/home/app/bin
     environment:
-      - TAG=sample
+      - VERSION=sample

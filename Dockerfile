@@ -3,9 +3,11 @@ ARG ARCH
 
 FROM ghcr.io/r-dvl/golang-builder:${OS}-${ARCH}
 
-ENV TAG=
 ENV PROJECT_NAME=rdvl-cli
-ENV FOLDER_NAME=${PROJECT_NAME}-${TAG}.${GOOS}-${GOARCH}
+
+ENV VERSION=sample
+
+ENV FOLDER_NAME=${PROJECT_NAME}-${VERSION}.${GOOS}-${GOARCH}
 
 WORKDIR /home/app
 
