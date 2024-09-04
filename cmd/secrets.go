@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 )
 
 // Variable to store the key to be passed with the --hide option
@@ -65,8 +64,8 @@ func processFile(file, key string) error {
 		return fmt.Errorf("could not read file %s: %v", file, err)
 	}
 
-	// Unmarshal YAML content into a map of string to interface{}
-	var content map[string]interface{}
+	// Unmarshal YAML content into a MapSlice
+	var content yaml.MapSlice
 	err = yaml.Unmarshal(data, &content)
 	if err != nil {
 		return fmt.Errorf("error parsing YAML file %s: %v", file, err)
@@ -77,20 +76,7 @@ func processFile(file, key string) error {
 
 	// If a change was made, save the file
 	if changed {
-		// Convert the map to JSON to preserve the order
-		jsonData, err := json.Marshal(content)
-		if err != nil {
-			return fmt.Errorf("error generating JSON for %s: %v", file, err)
-		}
-
-		// Convert JSON to YAML
-		var newData interface{}
-		err = json.Unmarshal(jsonData, &newData)
-		if err != nil {
-			return fmt.Errorf("error parsing JSON for %s: %v", file, err)
-		}
-
-		newYAMLData, err := yaml.Marshal(newData)
+		newYAMLData, err := yaml.Marshal(content)
 		if err != nil {
 			return fmt.Errorf("error generating YAML for %s: %v", file, err)
 		}
@@ -105,14 +91,14 @@ func processFile(file, key string) error {
 	return nil
 }
 
-// replaceValue replaces the value of the specified key in the map and its submaps
-func replaceValue(content map[string]interface{}, key string) bool {
+// replaceValue replaces the value of the specified key in the MapSlice and its submaps
+func replaceValue(content yaml.MapSlice, key string) bool {
 	changed := false
-	for k, v := range content {
-		if k == key {
-			content[k] = "secret"
+	for i, item := range content {
+		if item.Key == key {
+			content[i].Value = "secret"
 			changed = true
-		} else if nestedMap, ok := v.(map[string]interface{}); ok {
+		} else if nestedMap, ok := item.Value.(yaml.MapSlice); ok {
 			if replaceValue(nestedMap, key) {
 				changed = true
 			}
