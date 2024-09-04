@@ -10,46 +10,46 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Variable para almacenar la clave que se pasará con la opción --hide
+// Variable to store the key to be passed with the --hide option
 var hideKey string
 
-// secretsCmd representa el comando `secrets`
+// secretsCmd represents the `secrets` command
 var secretsCmd = &cobra.Command{
 	Use:   "secrets",
-	Short: "Comando para gestionar secretos en archivos YAML",
+	Short: "Command to manage secrets in YAML files",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Verificar si se pasó la opción --hide
+		// Check if the --hide option was provided
 		if hideKey != "" {
 			err := hideSecrets(hideKey)
 			if err != nil {
-				fmt.Printf("Error al ocultar secretos: %v\n", err)
+				fmt.Printf("Error hiding secrets: %v\n", err)
 				os.Exit(1)
 			}
-			fmt.Println("Se ocultaron los secretos exitosamente.")
+			fmt.Println("Secrets were successfully hidden.")
 		} else {
-			fmt.Println("Debe proporcionar la opción --hide con la clave que desea ocultar.")
+			fmt.Println("You must provide the --hide option with the key you want to hide.")
 		}
 	},
 }
 
 func init() {
-	// Agregar el comando al root
+	// Add the command to the root
 	rootCmd.AddCommand(secretsCmd)
 
-	// Definir la opción --hide con la opción corta -k para evitar conflictos con -h (help)
-	secretsCmd.Flags().StringVarP(&hideKey, "hide", "k", "", "Clave cuyo valor será reemplazado por 'secret' en los archivos YAML")
+	// Define the --hide option with a short flag -k to avoid conflicts with -h (help)
+	secretsCmd.Flags().StringVarP(&hideKey, "hide", "k", "", "Key whose value will be replaced with 'secret' in YAML files")
 }
 
-func hideSecrets(clave string) error {
-	// Obtener todos los archivos .yaml y .yml en el directorio actual
+func hideSecrets(key string) error {
+	// Get all .yaml and .yml files in the current directory
 	files, err := filepath.Glob("*.y*ml")
 	if err != nil {
-		return fmt.Errorf("no se pudieron encontrar archivos YAML: %v", err)
+		return fmt.Errorf("could not find YAML files: %v", err)
 	}
 
-	// Iterar sobre cada archivo encontrado
+	// Iterate over each file found
 	for _, file := range files {
-		err := processFile(file, clave)
+		err := processFile(file, key)
 		if err != nil {
 			return err
 		}
@@ -58,62 +58,62 @@ func hideSecrets(clave string) error {
 	return nil
 }
 
-func processFile(file, clave string) error {
-	// Leer el archivo
+func processFile(file, key string) error {
+	// Read the file
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return fmt.Errorf("no se pudo leer el archivo %s: %v", file, err)
+		return fmt.Errorf("could not read file %s: %v", file, err)
 	}
 
-	// Unmarshal del contenido YAML en un mapa de string a interface{}
+	// Unmarshal YAML content into a map of string to interface{}
 	var content map[string]interface{}
 	err = yaml.Unmarshal(data, &content)
 	if err != nil {
-		return fmt.Errorf("error al parsear el archivo YAML %s: %v", file, err)
+		return fmt.Errorf("error parsing YAML file %s: %v", file, err)
 	}
 
-	// Buscar y reemplazar la clave en el mapa
-	changed := replaceValue(content, clave)
+	// Find and replace the key in the map
+	changed := replaceValue(content, key)
 
-	// Si se realizó un cambio, guardar el archivo
+	// If a change was made, save the file
 	if changed {
-		// Convertir el mapa a JSON para preservar el orden
+		// Convert the map to JSON to preserve the order
 		jsonData, err := json.Marshal(content)
 		if err != nil {
-			return fmt.Errorf("error al generar JSON para %s: %v", file, err)
+			return fmt.Errorf("error generating JSON for %s: %v", file, err)
 		}
 
-		// Convertir el JSON a YAML
+		// Convert JSON to YAML
 		var newData interface{}
 		err = json.Unmarshal(jsonData, &newData)
 		if err != nil {
-			return fmt.Errorf("error al parsear JSON para %s: %v", file, err)
+			return fmt.Errorf("error parsing JSON for %s: %v", file, err)
 		}
 
 		newYAMLData, err := yaml.Marshal(newData)
 		if err != nil {
-			return fmt.Errorf("error al generar YAML para %s: %v", file, err)
+			return fmt.Errorf("error generating YAML for %s: %v", file, err)
 		}
 
 		err = os.WriteFile(file, newYAMLData, 0644)
 		if err != nil {
-			return fmt.Errorf("error al escribir el archivo %s: %v", file, err)
+			return fmt.Errorf("error writing file %s: %v", file, err)
 		}
-		fmt.Printf("Actualizado: %s\n", file)
+		fmt.Printf("Updated: %s\n", file)
 	}
 
 	return nil
 }
 
-// replaceValue reemplaza el valor de la clave especificada en el mapa y sus submapas
-func replaceValue(content map[string]interface{}, clave string) bool {
+// replaceValue replaces the value of the specified key in the map and its submaps
+func replaceValue(content map[string]interface{}, key string) bool {
 	changed := false
 	for k, v := range content {
-		if k == clave {
+		if k == key {
 			content[k] = "secret"
 			changed = true
 		} else if nestedMap, ok := v.(map[string]interface{}); ok {
-			if replaceValue(nestedMap, clave) {
+			if replaceValue(nestedMap, key) {
 				changed = true
 			}
 		}
