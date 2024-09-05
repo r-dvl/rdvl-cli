@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 )
 
 // Variable to store the key to be passed with the --hide option
@@ -17,7 +17,6 @@ var secretsCmd = &cobra.Command{
 	Use:   "secrets",
 	Short: "Command to manage secrets in YAML files",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Check if the --hide option was provided
 		if hideKey != "" {
 			err := hideSecrets(hideKey)
 			if err != nil {
@@ -35,7 +34,7 @@ func init() {
 	// Add the command to the root
 	rootCmd.AddCommand(secretsCmd)
 
-	// Define the --hide option with a short flag -k to avoid conflicts with -h (help)
+	// Define the --hide option with a short flag -k
 	secretsCmd.Flags().StringVarP(&hideKey, "hide", "k", "", "Key whose value will be replaced with 'secret' in YAML files")
 }
 
@@ -59,29 +58,22 @@ func hideSecrets(key string) error {
 
 func processFile(file, key string) error {
 	// Read the file
-	data, err := os.ReadFile(file)
+	input, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("could not read file %s: %v", file, err)
 	}
 
-	// Unmarshal YAML content into a MapSlice
-	var content yaml.MapSlice
-	err = yaml.Unmarshal(data, &content)
-	if err != nil {
-		return fmt.Errorf("error parsing YAML file %s: %v", file, err)
-	}
+	// Create a regex pattern to match the key and its value, preserving indentation
+	// Example: if `key` is "password", the pattern searches for lines like "  password: value"
+	pattern := fmt.Sprintf(`(?m)^(\s*%s:\s*)(.+)$`, regexp.QuoteMeta(key))
+	re := regexp.MustCompile(pattern)
 
-	// Find and replace the key in the map
-	changed := replaceValue(content, key)
+	// Replace only the value of the key with "secret" while preserving the original indentation
+	output := re.ReplaceAllString(string(input), "${1}secret")
 
-	// If a change was made, save the file
-	if changed {
-		newYAMLData, err := yaml.Marshal(content)
-		if err != nil {
-			return fmt.Errorf("error generating YAML for %s: %v", file, err)
-		}
-
-		err = os.WriteFile(file, newYAMLData, 0644)
+	// Write the changes back to the file only if changes occurred
+	if string(input) != output {
+		err = os.WriteFile(file, []byte(output), 0644)
 		if err != nil {
 			return fmt.Errorf("error writing file %s: %v", file, err)
 		}
@@ -89,20 +81,4 @@ func processFile(file, key string) error {
 	}
 
 	return nil
-}
-
-// replaceValue replaces the value of the specified key in the MapSlice and its submaps
-func replaceValue(content yaml.MapSlice, key string) bool {
-	changed := false
-	for i, item := range content {
-		if item.Key == key {
-			content[i].Value = "secret"
-			changed = true
-		} else if nestedMap, ok := item.Value.(yaml.MapSlice); ok {
-			if replaceValue(nestedMap, key) {
-				changed = true
-			}
-		}
-	}
-	return changed
 }
